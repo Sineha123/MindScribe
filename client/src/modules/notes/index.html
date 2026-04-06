@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindScribe Notes</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="card" aria-labelledby="title">
+    <h1 id="title">Sentence Notes</h1>
+
+    <label for="note-input">Enter your text:</label>
+    <textarea id="note-input" placeholder="Type or paste sentences ending with ., !, or ?"></textarea>
+
+    <button id="generate-btn" type="button">Generate Notes</button>
+
+    <div id="output" aria-live="polite"></div>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
