@@ -1,5 +1,8 @@
 import { processText } from "./api/notes.api.js";
 import { deleteProject, getProjects, saveProject } from "./api/projects.api.js";
+import { renderKeywordCharts } from "./charts/keywordChart.js";
+import { renderFlowchart } from "./flow/flowchart.js";
+import { renderConceptGraph } from "./graph/conceptGraph.js";
 import { renderNotes } from "./ui/renderNotes.js";
 import { renderProjects } from "./ui/renderProjects.js";
 import { pauseSpeech, resumeSpeech, speakNotes, stopSpeech } from "./voice/speech.js";
@@ -18,6 +21,8 @@ const projectsList = document.getElementById("projects-list");
 
 let currentProjectData = null;
 let currentNotes = [];
+let currentKeywords = {};
+let currentSentences = [];
 
 function setStatus(message, type = "info") {
   statusMessage.textContent = message;
@@ -60,8 +65,12 @@ function resetNotesView() {
   notesOutput.innerHTML = "";
   currentProjectData = null;
   currentNotes = [];
+  currentKeywords = {};
+  currentSentences = [];
   saveBtn.disabled = true;
   syncVoiceButtons();
+  renderKeywordCharts({});
+  renderConceptGraph({ keywords: {}, sentences: [] });
 }
 
 function fillEditorFromProject(project) {
@@ -74,7 +83,14 @@ function fillEditorFromProject(project) {
   };
 
   currentNotes = [...currentProjectData.notes];
+  currentKeywords = { ...currentProjectData.keywords };
+  currentSentences = Array.isArray(project.sentences) ? [...project.sentences] : [];
   renderNotes(currentNotes);
+  renderKeywordCharts(currentKeywords);
+  renderConceptGraph({
+    keywords: currentKeywords,
+    sentences: currentSentences
+  });
   saveBtn.disabled = false;
   syncVoiceButtons();
   setStatus("Project loaded.", "success");
@@ -118,11 +134,19 @@ async function handleGenerateNotes() {
       text,
       notes: response.data?.notes || [],
       keywords: response.data?.keywords || {},
-      summary: response.data?.summary || []
+      summary: response.data?.summary || [],
+      sentences: response.data?.sentences || []
     };
 
     currentNotes = [...currentProjectData.notes];
+    currentKeywords = { ...currentProjectData.keywords };
+    currentSentences = [...currentProjectData.sentences];
     renderNotes(currentNotes);
+    renderKeywordCharts(currentKeywords);
+    renderConceptGraph({
+      keywords: currentKeywords,
+      sentences: currentSentences
+    });
     saveBtn.disabled = false;
     syncVoiceButtons();
     setStatus("Notes generated successfully.", "success");
@@ -237,5 +261,11 @@ projectsList.addEventListener("click", handleProjectClick);
 projectsList.addEventListener("click", handleProjectDelete);
 
 renderNotes([]);
+renderKeywordCharts({});
+renderConceptGraph({ keywords: {}, sentences: [] });
 syncVoiceButtons();
 loadProjects();
+
+window.addEventListener("load", () => {
+  renderFlowchart();
+});

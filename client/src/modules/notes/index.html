@@ -8,6 +8,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true });
+  </script>
 </head>
 <body>
   <main class="page-shell">
@@ -42,6 +48,30 @@
           <button id="stop-btn" class="ghost-btn" type="button" disabled>Stop</button>
         </div>
         <div id="notes-output" class="notes-output"></div>
+
+        <section class="charts-section" aria-label="Keyword visualization">
+          <h2>Keyword Visualization</h2>
+          <div class="charts-grid">
+            <div class="chart-card">
+              <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <canvas id="pieChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="flow-section" aria-label="System flow">
+          <h2>System Flow</h2>
+          <div id="flowchart" class="flowchart-card"></div>
+        </section>
+
+        <section class="graph-section" aria-label="Concept graph">
+          <h2>Concept Graph</h2>
+          <div class="graph-card">
+            <svg id="graph" width="800" height="500"></svg>
+          </div>
+        </section>
       </section>
 
       <section class="panel projects-panel">

@@ -186,6 +186,86 @@ button:disabled {
   gap: 12px;
 }
 
+.charts-section {
+  margin-top: 22px;
+}
+
+.charts-section h2 {
+  margin-bottom: 14px;
+}
+
+.flow-section {
+  margin-top: 22px;
+}
+
+.flow-section h2 {
+  margin-bottom: 14px;
+}
+
+.graph-section {
+  margin-top: 22px;
+}
+
+.graph-section h2 {
+  margin-bottom: 14px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.chart-card {
+  min-height: 320px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 250, 241, 0.92);
+  border: 1px solid rgba(95, 62, 33, 0.1);
+}
+
+.flowchart-card {
+  overflow-x: auto;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 250, 241, 0.92);
+  border: 1px solid rgba(95, 62, 33, 0.1);
+}
+
+.flowchart-card .mermaid {
+  min-width: 520px;
+}
+
+.graph-card {
+  overflow: hidden;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 250, 241, 0.92);
+  border: 1px solid rgba(95, 62, 33, 0.1);
+}
+
+#graph {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 500px;
+}
+
+.graph-tooltip {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(47, 36, 25, 0.92);
+  color: #fffaf1;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  box-shadow: 0 12px 28px rgba(47, 36, 25, 0.18);
+  transition: opacity 120ms ease;
+}
+
 .note-item {
   margin: 0;
   padding: 14px 16px;
@@ -243,6 +323,10 @@ button:disabled {
 
 @media (max-width: 900px) {
   .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .charts-grid {
     grid-template-columns: 1fr;
   }
 }
