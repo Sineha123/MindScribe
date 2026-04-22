@@ -3,79 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MindScribe — AI Note Generator</title>
-  <meta name="description" content="Paste any text and let MindScribe AI extract smart notes, keywords, and a summary instantly." />
+  <title>MindScribe Project Manager</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-
-  <!-- ── HEADER ─────────────────────────────────────────── -->
-  <header class="top-bar">
-    <div class="logo">
-      <span class="logo-icon">🧠</span>
-      <span class="logo-text">Mind<strong>Scribe</strong></span>
-    </div>
-    <span class="badge">AI Powered</span>
-  </header>
-
-  <!-- ── MAIN ───────────────────────────────────────────── -->
-  <main class="container">
-
-    <!-- Input card -->
-    <section class="card input-card" aria-labelledby="input-title">
-      <h1 id="input-title">Turn text into smart notes</h1>
-      <p class="subtitle">Paste any paragraph, article, or notes below — MindScribe will do the rest.</p>
-
-      <label for="note-input" class="sr-only">Enter your text</label>
-      <div class="textarea-wrap">
-        <textarea
-          id="note-input"
-          placeholder="Paste or type your text here…&#10;&#10;Example: JavaScript is a powerful language. It runs in browsers and servers alike. Developers use it to build interactive web apps."
-          aria-label="Input text"
-          spellcheck="true"
-        ></textarea>
-        <span id="char-count" class="char-count">0 characters</span>
-      </div>
-
-      <div class="actions">
-        <button id="generate-btn" type="button" class="btn btn-primary">
-          <span class="btn-icon">✨</span> Generate Notes
-        </button>
-        <button id="clear-btn" type="button" class="btn btn-secondary">
-          <span class="btn-icon">🗑</span> Clear
-        </button>
-      </div>
-
-      <!-- Status banner (hidden by default) -->
-      <div id="status-banner" class="status-banner hidden" role="status" aria-live="polite"></div>
+  <main class="page-shell">
+    <section class="hero">
+      <p class="eyebrow">MindScribe</p>
+      <h1>Generate notes and manage saved projects in one place.</h1>
+      <p class="hero-copy">Paste your text, turn it into notes, and keep the best results ready for later.</p>
     </section>
 
-    <!-- Results card (hidden until we get data) -->
-    <section id="results-card" class="card results-card hidden" aria-label="Analysis results">
+    <section class="workspace">
+      <section class="panel composer-panel">
+        <h2>Text Input</h2>
+        <textarea id="note-input" placeholder="Paste your text here..."></textarea>
 
-      <!-- ── TAB BAR ─── -->
-      <nav class="tab-bar" role="tablist" aria-label="Result sections">
-        <button class="tab active" role="tab" aria-selected="true"  data-tab="notes"     id="tab-notes">📝 Notes</button>
-        <button class="tab"        role="tab" aria-selected="false" data-tab="summary"   id="tab-summary">💡 Summary</button>
-        <button class="tab"        role="tab" aria-selected="false" data-tab="keywords"  id="tab-keywords">🔑 Keywords</button>
-        <button class="tab"        role="tab" aria-selected="false" data-tab="sentences" id="tab-sentences">📖 Sentences</button>
-      </nav>
+        <div class="button-row">
+          <button id="generate-btn" class="primary-btn" type="button">Generate Notes</button>
+          <button id="save-btn" class="secondary-btn" type="button" disabled>Save Project</button>
+          <button id="clear-btn" class="ghost-btn" type="button">Clear</button>
+        </div>
 
-      <!-- ── PANELS ─── -->
-      <div class="panel active" id="panel-notes"     role="tabpanel" aria-labelledby="tab-notes"></div>
-      <div class="panel hidden" id="panel-summary"   role="tabpanel" aria-labelledby="tab-summary"></div>
-      <div class="panel hidden" id="panel-keywords"  role="tabpanel" aria-labelledby="tab-keywords"></div>
-      <div class="panel hidden" id="panel-sentences" role="tabpanel" aria-labelledby="tab-sentences"></div>
+        <p id="status-message" class="status-message" aria-live="polite"></p>
+      </section>
 
+      <section class="panel notes-panel">
+        <div class="panel-heading">
+          <h2>Generated Notes</h2>
+        </div>
+        <div class="button-row voice-controls">
+          <button id="read-btn" class="primary-btn" type="button" disabled>Read Notes</button>
+          <button id="pause-btn" class="ghost-btn" type="button" disabled>Pause</button>
+          <button id="resume-btn" class="ghost-btn" type="button" disabled>Resume</button>
+          <button id="stop-btn" class="ghost-btn" type="button" disabled>Stop</button>
+        </div>
+        <div id="notes-output" class="notes-output"></div>
+      </section>
+
+      <section class="panel projects-panel">
+        <div class="panel-heading">
+          <h2>Saved Projects</h2>
+        </div>
+        <div id="projects-list" class="projects-list"></div>
+      </section>
     </section>
-
   </main>
 
-  <footer class="footer">Built with Node.js + Express + Core Engine · MindScribe v1.0</footer>
-
-  <script src="./app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
