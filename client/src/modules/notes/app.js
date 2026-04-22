@@ -1,3 +1,4 @@
+import { requestAnswer, requestExplanation, requestSummary } from "./api/ai.api.js";
 import { processText } from "./api/notes.api.js";
 import { deleteProject, getProjects, saveProject } from "./api/projects.api.js";
 import { renderKeywordCharts } from "./charts/keywordChart.js";
@@ -11,6 +12,11 @@ const textarea = document.getElementById("note-input");
 const generateBtn = document.getElementById("generate-btn");
 const saveBtn = document.getElementById("save-btn");
 const clearBtn = document.getElementById("clear-btn");
+const aiSummaryBtn = document.getElementById("ai-summary-btn");
+const aiExplainBtn = document.getElementById("ai-explain-btn");
+const aiAskBtn = document.getElementById("ai-ask-btn");
+const aiQuestionInput = document.getElementById("ai-question-input");
+const aiOutput = document.getElementById("ai-output");
 const readBtn = document.getElementById("read-btn");
 const pauseBtn = document.getElementById("pause-btn");
 const resumeBtn = document.getElementById("resume-btn");
@@ -23,6 +29,7 @@ let currentProjectData = null;
 let currentNotes = [];
 let currentKeywords = {};
 let currentSentences = [];
+let aiRequestInFlight = false;
 
 function setStatus(message, type = "info") {
   statusMessage.textContent = message;
@@ -45,6 +52,26 @@ function setLoadingState(isLoading, message = "Processing...") {
 
   if (isLoading) {
     setStatus(message, "info");
+  }
+}
+
+function getCurrentContent() {
+  if (currentProjectData?.text?.trim()) {
+    return currentProjectData.text.trim();
+  }
+
+  return textarea.value.trim();
+}
+
+function setAiLoadingState(isLoading, message = "Thinking...") {
+  aiRequestInFlight = isLoading;
+  aiSummaryBtn.disabled = isLoading;
+  aiExplainBtn.disabled = isLoading;
+  aiAskBtn.disabled = isLoading;
+  aiQuestionInput.disabled = isLoading;
+
+  if (isLoading) {
+    aiOutput.textContent = message;
   }
 }
 
@@ -71,6 +98,7 @@ function resetNotesView() {
   syncVoiceButtons();
   renderKeywordCharts({});
   renderConceptGraph({ keywords: {}, sentences: [] });
+  aiOutput.textContent = "AI answers will appear here.";
 }
 
 function fillEditorFromProject(project) {
@@ -182,6 +210,41 @@ async function handleSaveProject() {
   }
 }
 
+async function runAiAction(requestFn, payloadBuilder) {
+  if (aiRequestInFlight) {
+    return;
+  }
+
+  const content = getCurrentContent();
+
+  if (!content) {
+    setStatus("Add or generate content before using AI tools.", "error");
+    return;
+  }
+
+  setAiLoadingState(true, "Thinking...");
+
+  try {
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 250);
+    });
+
+    const response = await requestFn(payloadBuilder(content));
+
+    if (!response.success) {
+      throw new Error(response.message || "AI request failed.");
+    }
+
+    aiOutput.textContent = response.data;
+    setStatus("AI response ready.", "success");
+  } catch (error) {
+    aiOutput.textContent = "Something went wrong while contacting the AI assistant.";
+    setStatus(error.message || "AI request failed.", "error");
+  } finally {
+    setAiLoadingState(false);
+  }
+}
+
 function handleProjectClick(event) {
   const projectItem = event.target.closest("[data-project]");
 
@@ -226,6 +289,32 @@ async function handleProjectDelete(event) {
 
 generateBtn.addEventListener("click", handleGenerateNotes);
 saveBtn.addEventListener("click", handleSaveProject);
+aiSummaryBtn.addEventListener("click", () => {
+  runAiAction(
+    ({ content }) => requestSummary(content),
+    (content) => ({ content })
+  );
+});
+aiExplainBtn.addEventListener("click", () => {
+  runAiAction(
+    ({ content }) => requestExplanation(content),
+    (content) => ({ content })
+  );
+});
+aiAskBtn.addEventListener("click", () => {
+  const question = aiQuestionInput.value.trim();
+
+  if (!question) {
+    setStatus("Enter a question before asking the AI assistant.", "error");
+    aiQuestionInput.focus();
+    return;
+  }
+
+  runAiAction(
+    ({ content, currentQuestion }) => requestAnswer(content, currentQuestion),
+    (content) => ({ content, currentQuestion: question })
+  );
+});
 readBtn.addEventListener("click", () => {
   if (currentNotes.length === 0) {
     setStatus("Generate or load notes before using voice reading.", "error");

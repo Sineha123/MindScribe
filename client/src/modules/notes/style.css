@@ -113,6 +113,22 @@ textarea {
   resize: vertical;
 }
 
+input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+input:focus {
+  outline: 2px solid rgba(196, 103, 45, 0.2);
+  border-color: rgba(196, 103, 45, 0.5);
+}
+
 textarea:focus {
   outline: 2px solid rgba(196, 103, 45, 0.2);
   border-color: rgba(196, 103, 45, 0.5);
@@ -184,6 +200,35 @@ button:disabled {
 .projects-list {
   display: grid;
   gap: 12px;
+}
+
+.ai-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(95, 62, 33, 0.12);
+}
+
+.ai-actions {
+  margin-top: 0;
+}
+
+.ai-question-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.ai-output {
+  margin-top: 14px;
+  min-height: 96px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 250, 241, 0.92);
+  border: 1px solid rgba(95, 62, 33, 0.1);
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
 }
 
 .charts-section {

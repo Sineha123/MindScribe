@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { errorHandler } from "./middlewares/error.middleware.js";
+import aiRoutes from "./modules/ai/ai.routes.js";
 import projectRoutes from "./modules/projects/project.routes.js";
 import notesRoutes from "./routes/notes.routes.js";
 
@@ -19,6 +20,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/notes", notesRoutes);
 app.use("/api/projects", projectRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.use(errorHandler);
 

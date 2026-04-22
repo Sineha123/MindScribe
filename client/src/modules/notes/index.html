@@ -35,6 +35,21 @@
         </div>
 
         <p id="status-message" class="status-message" aria-live="polite"></p>
+
+        <section class="ai-section" aria-label="AI assistant">
+          <div class="panel-heading">
+            <h2>AI Assistant</h2>
+          </div>
+          <div class="button-row ai-actions">
+            <button id="ai-summary-btn" class="secondary-btn" type="button">AI Summary</button>
+            <button id="ai-explain-btn" class="ghost-btn" type="button">Explain</button>
+          </div>
+          <div class="ai-question-row">
+            <input id="ai-question-input" type="text" placeholder="Ask a question about your content..." />
+            <button id="ai-ask-btn" class="primary-btn" type="button">Ask</button>
+          </div>
+          <div id="ai-output" class="ai-output">AI answers will appear here.</div>
+        </section>
       </section>
 
       <section class="panel notes-panel">
