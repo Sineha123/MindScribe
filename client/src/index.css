@@ -1,33 +1,92 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  body {
-    @apply bg-background text-textMain antialiased overflow-hidden;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  }
+@theme {
+  --color-background: #040B16;
+  --color-surface: rgba(13, 25, 48, 0.6);
+  --color-surfaceBorder: rgba(56, 189, 248, 0.2);
+  --color-primary: #38bdf8;
+  --color-secondary: #818cf8;
+  --color-accent: #c084fc;
+  --color-textMain: #f8fafc;
+  --color-textMuted: #94a3b8;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-textMain);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 @layer components {
   .glass-panel {
-    @apply bg-surface backdrop-blur-md border border-surfaceBorder rounded-2xl shadow-lg;
+    background-color: var(--color-surface);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-surfaceBorder);
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
   
   .glass-button {
-    @apply bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    transition-property: all;
+    transition-duration: 300ms;
+  }
+  .glass-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  .glass-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .primary-button {
-    @apply bg-gradient-to-r from-primary to-secondary hover:from-primary/80 hover:to-secondary/80 text-white font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(56,189,248,0.4)];
+    background-image: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+    color: white;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition-property: all;
+    transition-duration: 300ms;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+  }
+  .primary-button:hover {
+    opacity: 0.9;
+  }
+  .primary-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .input-field {
-    @apply bg-white/5 border border-white/10 rounded-lg p-3 text-textMain placeholder:text-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    color: var(--color-textMain);
+    transition-property: all;
+  }
+  .input-field:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.5);
   }
 }
 
-/* Custom scrollbar for webkit */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 15px 0 rgba(56, 189, 248, 0.5); }
+  50% { opacity: 0.7; box-shadow: 0 0 25px 0 rgba(56, 189, 248, 0.8); }
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
