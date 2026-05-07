@@ -1,20 +1,6 @@
 import { motion } from 'framer-motion';
 
-export default function NotesInput({ currentText, setCurrentText, setNotes, isProcessing, setIsProcessing }) {
-  const handleGenerate = async () => {
-    if (!currentText.trim()) return;
-    setIsProcessing(true);
-    // Simulate API call
-    setTimeout(() => {
-      setNotes([
-        { id: 1, text: "Introduction to AI learning systems." },
-        { id: 2, text: "Neural networks and deep learning concepts." },
-        { id: 3, text: "The future of AI-powered education and interactive dashboards." }
-      ]);
-      setIsProcessing(false);
-    }, 1500);
-  };
-
+export default function NotesInput({ currentText, setCurrentText, onGenerate, isProcessing }) {
   return (
     <motion.section 
       initial={{ opacity: 0, scale: 0.95 }}
@@ -35,12 +21,12 @@ export default function NotesInput({ currentText, setCurrentText, setNotes, isPr
         value={currentText}
         onChange={(e) => setCurrentText(e.target.value)}
         placeholder="Paste your text here to begin the synthesis process..."
-        className="input-field min-h-[200px] resize-y relative z-10 text-lg leading-relaxed font-light"
+        className="input-field min-h-[150px] resize-y relative z-10 text-lg leading-relaxed font-light"
       />
 
       <div className="flex gap-4 mt-2 relative z-10">
         <button 
-          onClick={handleGenerate}
+          onClick={onGenerate}
           disabled={isProcessing || !currentText.trim()}
           className="primary-button px-6 py-3 flex-1 flex justify-center items-center gap-2"
         >
@@ -56,7 +42,7 @@ export default function NotesInput({ currentText, setCurrentText, setNotes, isPr
           )}
         </button>
         <button 
-          onClick={() => { setCurrentText(''); setNotes([]); }}
+          onClick={() => { setCurrentText(''); }}
           className="glass-button px-6 py-3"
         >
           Clear
