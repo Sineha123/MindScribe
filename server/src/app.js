@@ -4,6 +4,8 @@ import { errorHandler } from "./middlewares/error.middleware.js";
 import aiRoutes from "./modules/ai/ai.routes.js";
 import projectRoutes from "./modules/projects/project.routes.js";
 import notesRoutes from "./routes/notes.routes.js";
+import uploadRoutes from "./routes/upload.routes.js";
+import exportRoutes from "./routes/export.routes.js";
 
 const app = express();
 
@@ -21,6 +23,8 @@ app.get("/", (req, res) => {
 app.use("/api/notes", notesRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/export", exportRoutes);
 
 app.use(errorHandler);
 

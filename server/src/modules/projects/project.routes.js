@@ -8,10 +8,33 @@ import {
 
 const router = express.Router();
 
+router.post("/", async (req, res, next) => {
+  try {
+    const project = await saveProject(req.body);
+    res.status(201).json({
+      success: true,
+      data: project
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/:id", async (req, res, next) => {
+  try {
+    const project = await saveProject({ ...req.body, _id: req.params.id });
+    res.status(200).json({
+      success: true,
+      data: project
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/save", async (req, res, next) => {
   try {
     const project = await saveProject(req.body);
-
     res.status(201).json({
       success: true,
       data: project
