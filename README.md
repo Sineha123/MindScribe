@@ -6,6 +6,22 @@ Featuring a **dual LLM engine** (Google Gemini + local Ollama), a **BM25 RAG pip
 
 ---
 
+## 📸 App Screenshots
+
+### 🏠 Home Page
+![Home Page](./docs/images/home.png)
+
+### 📂 Project Page
+![Project Page](./docs/images/project.png)
+
+### 📝 Document Editor & AI Synthesis
+![Document Editor](./docs/images/document.png)
+
+### 📊 AI Visuals & Custom Studio
+![Visuals](./docs/images/visuals.png)
+
+---
+
 ## 🌟 1. System Architecture
 
 ```

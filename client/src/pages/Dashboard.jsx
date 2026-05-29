@@ -24,9 +24,15 @@ export default function Dashboard() {
   const [projectData, setProjectData] = useState({
     infographicHtml: '',
     flowchart: '',
-    graph: { nodes: [], links: [] }
+    graph: { nodes: [], links: [] },
+    customVisuals: []
   });
-  const [activeVisualTab, setActiveVisualTab] = useState('storyboard'); // storyboard, flow, graph
+  const [activeVisualTab, setActiveVisualTab] = useState('storyboard'); // storyboard, flow, graph, custom
+  
+  const [selectedText, setSelectedText] = useState('');
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [isGeneratingCustom, setIsGeneratingCustom] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   
   const [activeTab, setActiveTab] = useState('editor'); // editor, visuals
   const [language, setLanguage] = useState('English');
@@ -94,7 +100,8 @@ export default function Dashboard() {
         keywords: project.keywords || {},
         infographicHtml: project.infographicHtml || '',
         flowchart: project.flowchart || '',
-        graph: project.graph || { nodes: [], links: [] }
+        graph: project.graph || { nodes: [], links: [] },
+        customVisuals: project.customVisuals || []
       });
 
       lastSavedContent.current = project.editorContent || `<p>${project.text || ''}</p>`;
@@ -176,7 +183,8 @@ export default function Dashboard() {
         text: editorContent.replace(/<[^>]*>?/gm, ''), // plain text representation
         keywords: projectData.keywords,
         flowchart: projectData.flowchart,
-        graph: projectData.graph
+        graph: projectData.graph,
+        customVisuals: projectData.customVisuals || []
       };
 
       await projectsService.saveProject(payload);
@@ -253,6 +261,60 @@ export default function Dashboard() {
       setIsProcessing(false);
     }
   };
+
+  const handleGenerateCustomVisual = async (useSelection = false) => {
+    const textToAnalyze = useSelection ? selectedText : editorContent.replace(/<[^>]*>?/gm, '');
+    if (!textToAnalyze.trim()) return;
+
+    setIsGeneratingCustom(true);
+    setSaveStatus('saving');
+    
+    try {
+      const visualsRes = await aiService.generateVisuals(textToAnalyze, language, undefined, customPrompt);
+      const parsedVisuals = visualsRes.data.data;
+      
+      const newCustomVisual = {
+        id: Date.now().toString(),
+        name: customPrompt || (useSelection ? 'Selected Text Visual' : 'Custom Visual'),
+        flowchart: parsedVisuals.flowchart,
+        graph: parsedVisuals.graph
+      };
+
+      const updatedCustoms = [...(projectData.customVisuals || []), newCustomVisual];
+      setProjectData(prev => ({ ...prev, customVisuals: updatedCustoms }));
+
+      const activeProj = projects.find(p => p._id === activeProjectId);
+      if (activeProj) {
+        const payload = {
+          ...activeProj,
+          editorContent,
+          text: editorContent.replace(/<[^>]*>?/gm, ''),
+          ...projectData,
+          customVisuals: updatedCustoms
+        };
+        await projectsService.saveProject(payload);
+      }
+      setSaveStatus('saved');
+      setCustomPrompt('');
+    } catch (err) {
+      console.error('Custom visual failed', err);
+      setSaveStatus('unsaved');
+    } finally {
+      setIsGeneratingCustom(false);
+    }
+  };
+
+  const handleGenerateImage = () => {
+    if (!customPrompt.trim()) return;
+    setIsGeneratingCustom(true);
+    // Pollinations AI provides free, keyless AI image generation via URL
+    const seed = Math.floor(Math.random() * 1000000);
+    const encodedPrompt = encodeURIComponent(`${customPrompt}, professional educational diagram, high quality, 4k`);
+    const imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=800&height=600&nologo=true`;
+    setGeneratedImageUrl(imgUrl);
+    setIsGeneratingCustom(false);
+  };
+
 
   const handleExport = async (type) => {
     try {
@@ -449,7 +511,7 @@ export default function Dashboard() {
                   exit={{ opacity: 0, scale: 0.98 }}
                   className="flex-1 overflow-hidden"
                 >
-                  <RichEditor content={editorContent} onChange={setEditorContent} />
+                  <RichEditor content={editorContent} onChange={setEditorContent} onSelectionChange={setSelectedText} />
                 </motion.div>
               ) : (
                 <motion.div 
@@ -461,7 +523,7 @@ export default function Dashboard() {
                 >
                   {/* Visual sub-tab selector */}
                   <div style={{ display: 'flex', gap: '6px', background: 'rgba(0,0,0,0.25)', padding: '6px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', width: 'fit-content' }}>
-                    {[{ id: 'storyboard', label: '📊 Storyboard' }, { id: 'flow', label: '🔀 Flow' }, { id: 'graph', label: '🕸 Graph' }].map(tab => (
+                    {[{ id: 'storyboard', label: '📊 Storyboard' }, { id: 'flow', label: '🔀 Flow' }, { id: 'graph', label: '🕸 Graph' }, { id: 'custom', label: '✨ Custom & Image' }].map(tab => (
                       <button key={tab.id} onClick={() => setActiveVisualTab(tab.id)}
                         style={{
                           padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
@@ -475,8 +537,80 @@ export default function Dashboard() {
                   </div>
 
                   {activeVisualTab === 'storyboard' && <InfographicPanel htmlContent={projectData.infographicHtml} />}
-                  {activeVisualTab === 'flow' && <FlowchartPanel definition={projectData.flowchart} />}
+                  {activeVisualTab === 'flow' && (
+                    <FlowchartPanel 
+                      definition={projectData.flowchart} 
+                      onInsert={(html) => setEditorContent(prev => prev + `<br/><br/>${html}`)}
+                    />
+                  )}
                   {activeVisualTab === 'graph' && <ConceptGraph data={projectData.graph} />}
+                  {activeVisualTab === 'custom' && (
+                    <div className="flex flex-col gap-6 w-full">
+                      <div className="glass-panel p-6 border-accent/30" style={{ display: 'flex', flexDirection: 'col', gap: '16px' }}>
+                        <h2 className="text-lg font-bold text-white mb-2">✨ Custom Visual Studio</h2>
+                        <input 
+                          type="text" 
+                          placeholder="What do you want to visualize? (e.g., 'Data Flow', 'Security Architecture')" 
+                          value={customPrompt}
+                          onChange={e => setCustomPrompt(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none mb-4"
+                        />
+                        <div className="flex flex-wrap gap-3">
+                          <button 
+                            onClick={() => handleGenerateCustomVisual(false)}
+                            disabled={isGeneratingCustom}
+                            className="bg-primary/20 text-primary border border-primary/30 px-4 py-2 rounded-lg font-bold hover:bg-primary/30 transition-all disabled:opacity-50"
+                          >
+                            {isGeneratingCustom ? 'Generating...' : 'Graph from Document'}
+                          </button>
+                          <button 
+                            onClick={() => handleGenerateCustomVisual(true)}
+                            disabled={isGeneratingCustom || !selectedText}
+                            className="bg-accent/20 text-accent border border-accent/30 px-4 py-2 rounded-lg font-bold hover:bg-accent/30 transition-all disabled:opacity-50"
+                            title={!selectedText ? "Highlight text in the editor first!" : ""}
+                          >
+                            {isGeneratingCustom ? 'Generating...' : 'Graph from Selection'}
+                          </button>
+                          <button 
+                            onClick={handleGenerateImage}
+                            disabled={isGeneratingCustom || !customPrompt}
+                            className="bg-green-500/20 text-green-400 border border-green-500/30 px-4 py-2 rounded-lg font-bold hover:bg-green-500/30 transition-all disabled:opacity-50"
+                          >
+                            Generate AI Image
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Display generated image if any */}
+                      {generatedImageUrl && (
+                        <div className="glass-panel p-4 flex flex-col items-center border-green-500/30 gap-4">
+                          <h3 className="text-md font-bold text-green-400 self-start">Generated Image</h3>
+                          <img src={generatedImageUrl} alt="Generated UI" className="rounded-xl shadow-lg border border-white/10 max-w-full" />
+                          <button 
+                            onClick={() => setEditorContent(prev => prev + `<br/><br/><img src="${generatedImageUrl}" style="max-width: 100%; border-radius: 8px;" />`)}
+                            className="bg-green-500/20 text-green-400 border border-green-500/30 px-4 py-2 rounded-lg font-bold"
+                          >
+                            Add Image to Document
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Map through saved custom visuals */}
+                      {projectData.customVisuals?.map(cv => (
+                        <div key={cv.id} className="glass-panel p-4 flex flex-col gap-4 border-white/10">
+                          <h3 className="text-md font-bold text-white mb-2 pb-2 border-b border-white/10">{cv.name}</h3>
+                          {cv.flowchart && (
+                            <div className="mb-4">
+                              <FlowchartPanel definition={cv.flowchart} onInsert={(html) => setEditorContent(prev => prev + `<br/><br/>${html}`)} />
+                            </div>
+                          )}
+                          {cv.graph && cv.graph.nodes && cv.graph.nodes.length > 0 && (
+                            <ConceptGraph data={cv.graph} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

@@ -1,26 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import { motion } from 'framer-motion';
-import { GitBranch, RefreshCw, Download } from 'lucide-react';
+import { GitBranch, RefreshCw, Download, PlusCircle } from 'lucide-react';
 
 mermaid.initialize({
   startOnLoad: false,
-  theme: 'dark',
+  theme: 'default',
   securityLevel: 'loose',
   fontFamily: 'Inter, sans-serif',
   fontSize: 14,
+  flowchart: { htmlLabels: false },
   themeVariables: {
-    primaryColor: '#0f3460',
-    primaryTextColor: '#e0e0ff',
-    primaryBorderColor: '#533483',
-    lineColor: '#e94560',
-    secondaryColor: '#16213e',
-    tertiaryColor: '#1a1a2e',
-    clusterBkg: '#16213e',
-    clusterBorder: '#533483',
-    fillType0: '#0f3460',
-    fillType1: '#533483',
-    fillType2: '#e94560',
+    primaryColor: '#e3f2fd',
+    primaryTextColor: '#1e293b',
+    primaryBorderColor: '#94a3b8',
+    lineColor: '#64748b',
+    secondaryColor: '#f1f5f9',
+    tertiaryColor: '#f8fafc',
+    clusterBkg: '#f8fafc',
+    clusterBorder: '#cbd5e1',
+    nodeTextColor: '#0f172a',
   },
 });
 
@@ -58,7 +57,53 @@ function sanitizeMermaid(definition) {
     .trim();
 }
 
-export default function FlowchartPanel({ definition }) {
+const getPngDataUrl = async (svgString) => {
+  return new Promise((resolve, reject) => {
+    // Strip external fonts/imports or foreignObject that taint the canvas
+    let safeSvg = svgString
+      .replace(/@import url\([^)]+\);?/g, '') // remove external CSS imports
+      .replace(/<foreignObject[\s\S]*?<\/foreignObject>/g, ''); // kill any lingering foreignObjects
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // sometimes helps with rendering
+
+    // Use base64 instead of Blob URL
+    const b64 = btoa(unescape(encodeURIComponent(safeSvg)));
+    img.src = `data:image/svg+xml;base64,${b64}`;
+    
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const match = safeSvg.match(/viewBox="[\d.\s]+ (\d+\.?\d*) (\d+\.?\d*)"/);
+        const w = match ? parseFloat(match[1]) : (img.width || 800);
+        const h = match ? parseFloat(match[2]) : (img.height || 600);
+        
+        const scale = 2;
+        canvas.width = w * scale;
+        canvas.height = h * scale;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.scale(scale, scale);
+        ctx.drawImage(img, 0, 0, w, h);
+        
+        resolve(canvas.toDataURL('image/png'));
+      } catch (err) {
+        console.error("Canvas export failed:", err);
+        // Fallback: resolve with the raw SVG data URL so it doesn't break
+        resolve(`data:image/svg+xml;base64,${b64}`);
+      }
+    };
+
+    img.onerror = (err) => {
+      console.error("Image load failed", err);
+      resolve(`data:image/svg+xml;base64,${b64}`);
+    };
+  });
+};
+
+export default function FlowchartPanel({ definition, onInsert }) {
   const containerRef = useRef(null);
   const [svgContent, setSvgContent] = useState('');
   const [isRendering, setIsRendering] = useState(false);
@@ -147,39 +192,48 @@ export default function FlowchartPanel({ definition }) {
         )}
         
         {svgContent && !isRendering && (
-          <button
-            onClick={() => {
-              const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = 'flowchart.svg';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-            }}
-            style={{
-              marginLeft: 'auto',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              background: 'rgba(233,69,96,0.15)',
-              border: '1px solid rgba(233,69,96,0.3)',
-              color: '#e94560',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(233,69,96,0.25)'}
-            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(233,69,96,0.15)'}
-          >
-            <Download size={14} />
-            Download SVG
-          </button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+            {onInsert && (
+              <button
+                onClick={async () => {
+                  const dataUrl = await getPngDataUrl(svgContent);
+                  onInsert(`<img src="${dataUrl}" style="max-width: 100%; border-radius: 8px; border: 1px solid #ccc; margin: 10px 0; background: white;" alt="Flowchart" />`);
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px',
+                  borderRadius: '6px', background: 'rgba(52,131,83,0.15)',
+                  border: '1px solid rgba(52,131,83,0.3)', color: '#348353',
+                  fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(52,131,83,0.25)'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(52,131,83,0.15)'}
+              >
+                <PlusCircle size={14} /> Add to Document
+              </button>
+            )}
+            
+            <button
+              onClick={async () => {
+                const dataUrl = await getPngDataUrl(svgContent);
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = 'flowchart.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px',
+                borderRadius: '6px', background: 'rgba(233,69,96,0.15)',
+                border: '1px solid rgba(233,69,96,0.3)', color: '#e94560',
+                fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(233,69,96,0.25)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(233,69,96,0.15)'}
+            >
+              <Download size={14} /> Download PNG
+            </button>
+          </div>
         )}
       </div>
 

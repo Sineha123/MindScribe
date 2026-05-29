@@ -204,8 +204,13 @@ ${content}`;
   return generate(prompt, apiKey, provider, ollamaModel);
 }
 
-export async function generateVisuals(text, language = 'English', apiKey, provider, ollamaModel) {
-  const prompt = `You are an expert educational visualizer specializing in creating stunning, information-dense infographics like those used in educational textbooks and professional explainer content (similar to VPS Hosting explained with flowcharts, Feistel Cipher architecture diagrams, and comic-style storytelling panels).
+export async function generateVisuals(text, language = 'English', apiKey, provider, ollamaModel, customPrompt = '') {
+  let instructions = customPrompt ? 
+    `Focus specifically on the following requirement: "${customPrompt}". Make sure all visual outputs reflect this specific angle or subject.` : 
+    `Analyze the text broadly.`;
+
+  const prompt = `You are an expert educational visualizer specializing in creating stunning, information-dense infographics.
+${instructions}
 
 Analyze the following text and return a valid JSON object enclosed in \`\`\`json and \`\`\` containing:
 

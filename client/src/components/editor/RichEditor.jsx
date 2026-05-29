@@ -51,7 +51,7 @@ const MenuBar = ({ editor }) => {
   );
 };
 
-export default function RichEditor({ content, onChange }) {
+export default function RichEditor({ content, onChange, onSelectionChange }) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -64,6 +64,16 @@ export default function RichEditor({ content, onChange }) {
     content: content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
+    },
+    onSelectionUpdate: ({ editor }) => {
+      if (onSelectionChange) {
+        const selectedText = editor.state.doc.textBetween(
+          editor.state.selection.from,
+          editor.state.selection.to,
+          ' '
+        );
+        onSelectionChange(selectedText);
+      }
     },
     editorProps: {
       attributes: {

@@ -48,8 +48,8 @@ export const aiService = {
     api.post('/ai/ask', { content, question, language, projectId, ...opts }),
   explainContent: (content, level = 'beginner', language = 'English', opts = {}) =>
     api.post('/ai/explain', { content, level, language, ...opts }),
-  generateVisuals: (text, language = 'English', opts = {}) =>
-    api.post('/ai/visuals', { text, language, ...opts }),
+  generateVisuals: (text, language = 'English', opts = {}, customPrompt = '') =>
+    api.post('/ai/visuals', { text, language, customPrompt, ...opts }),
   getProviders: () => api.get('/ai/providers'),
   getContext: (text, question, language, projectId, documentTitle) =>
     api.post('/ai/context', { text, question, language, projectId, documentTitle }),

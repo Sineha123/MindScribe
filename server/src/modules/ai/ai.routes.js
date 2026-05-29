@@ -81,10 +81,10 @@ router.post("/explain", async (req, res, next) => {
 // ─── POST /api/ai/visuals ─────────────────────────────────────────────────
 router.post("/visuals", async (req, res, next) => {
   try {
-    const { text, language } = req.body;
+    const { text, language, customPrompt } = req.body;
     if (!text) throw Object.assign(new Error("Text is required"), { statusCode: 400 });
     const { apiKey, provider, ollamaModel } = getProviderOpts(req);
-    const result = await generateVisuals(text, language, apiKey, provider, ollamaModel);
+    const result = await generateVisuals(text, language, apiKey, provider, ollamaModel, customPrompt);
     res.status(200).json({ success: true, data: result });
   } catch (error) {
     next(error);
