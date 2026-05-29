@@ -25,6 +25,10 @@ const projectSchema = new mongoose.Schema({
     type: Array,
     default: []
   },
+  infographicHtml: {
+    type: String,
+    default: ""
+  },
   flowchart: {
     type: String,
     default: ""

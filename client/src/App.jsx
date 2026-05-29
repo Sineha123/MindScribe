@@ -1,6 +1,9 @@
 import { Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
+import Splash from './pages/Splash';
+import ProjectsOverview from './pages/ProjectsOverview';
 import Scene from './components/three/Scene';
+import SettingsDialog from './components/layout/SettingsDialog';
 
 function App() {
   return (
@@ -12,8 +15,11 @@ function App() {
       
       {/* Main UI Overlay */}
       <div className="relative z-10 w-full h-full flex flex-col">
+        <SettingsDialog />
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Splash />} />
+          <Route path="/projects" element={<ProjectsOverview />} />
+          <Route path="/editor/:id" element={<Dashboard />} />
         </Routes>
       </div>
     </div>

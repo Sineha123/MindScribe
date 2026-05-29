@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Folder, Trash2, Edit2, Check, Plus } from 'lucide-react';
+import { Folder, Trash2, Edit2, Check, Plus, BrainCircuit } from 'lucide-react';
 
 export default function Sidebar({ 
   projects = [], 
@@ -44,7 +44,7 @@ export default function Sidebar({
       {/* Brand Header */}
       <div className="flex items-center gap-3 cursor-pointer">
         <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center animate-pulse-glow">
-          <span className="font-bold text-lg text-white">M</span>
+          <BrainCircuit className="text-white" size={24} />
         </div>
         <div>
           <h2 className="text-lg font-bold tracking-wide leading-tight">MindScribe</h2>

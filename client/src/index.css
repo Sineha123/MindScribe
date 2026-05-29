@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #040B16;
-  --color-surface: rgba(13, 25, 48, 0.6);
-  --color-surfaceBorder: rgba(56, 189, 248, 0.2);
-  --color-primary: #38bdf8;
-  --color-secondary: #818cf8;
-  --color-accent: #c084fc;
-  --color-textMain: #f8fafc;
-  --color-textMuted: #94a3b8;
+  --color-background: #000000;
+  --color-surface: rgba(20, 20, 20, 0.8);
+  --color-surfaceBorder: rgba(255, 255, 255, 0.15);
+  --color-primary: #ffffff;
+  --color-secondary: #a0a0a0;
+  --color-accent: #e5e5e5;
+  --color-textMain: #ffffff;
+  --color-textMuted: #8a8a8a;
 
   --animate-float: float 6s ease-in-out infinite;
   --animate-pulse-glow: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -53,7 +53,7 @@ body {
     border-radius: 0.5rem;
     transition-property: all;
     transition-duration: 300ms;
-    box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
   }
   .primary-button:hover {
     opacity: 0.9;
@@ -73,7 +73,7 @@ body {
   }
   .input-field:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
   }
 }
 
@@ -83,8 +83,8 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 1; box-shadow: 0 0 15px 0 rgba(56, 189, 248, 0.5); }
-  50% { opacity: 0.7; box-shadow: 0 0 25px 0 rgba(56, 189, 248, 0.8); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 15px 0 rgba(255, 255, 255, 0.3); }
+  50% { opacity: 0.7; box-shadow: 0 0 25px 0 rgba(255, 255, 255, 0.6); }
 }
 
 ::-webkit-scrollbar {
@@ -95,9 +95,9 @@ body {
   background: rgba(0, 0, 0, 0.1);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.3);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 189, 248, 0.5);
+  background: rgba(255, 255, 255, 0.4);
 }

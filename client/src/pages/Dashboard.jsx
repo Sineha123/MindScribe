@@ -1,17 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/layout/Sidebar';
 import RichEditor from '../components/editor/RichEditor';
 import AIResponsePanel from '../components/ai/AIResponsePanel';
-import KeywordCharts from '../components/charts/KeywordCharts';
+import InfographicPanel from '../components/flow/InfographicPanel';
 import FlowchartPanel from '../components/flow/FlowchartPanel';
 import ConceptGraph from '../components/graph/ConceptGraph';
 import VoiceControls from '../components/voice/VoiceControls';
-import { aiService, uploadService, exportService, projectsService } from '../services/api';
+import { aiService, notesService, uploadService, exportService, projectsService } from '../services/api';
 import { exportToPdf } from '../utils/exportUtils';
 import { Upload, Download, FileText, Sparkles, Save, Check, RefreshCw } from 'lucide-react';
 
 export default function Dashboard() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [editorContent, setEditorContent] = useState('');
@@ -19,20 +22,35 @@ export default function Dashboard() {
   const [saveStatus, setSaveStatus] = useState('saved'); // saved, unsaved, saving
   
   const [projectData, setProjectData] = useState({
-    keywords: {},
+    infographicHtml: '',
     flowchart: '',
     graph: { nodes: [], links: [] }
   });
+  const [activeVisualTab, setActiveVisualTab] = useState('storyboard'); // storyboard, flow, graph
   
   const [activeTab, setActiveTab] = useState('editor'); // editor, visuals
+  const [language, setLanguage] = useState('English');
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [editName, setEditName] = useState('');
+
+  const submitRename = async () => {
+    if (editName.trim() && editName !== activeProjectName()) {
+      await handleRenameProject(activeProjectId, editName);
+    }
+    setIsRenaming(false);
+  };
 
   const lastSavedContent = useRef('');
   const autosaveTimer = useRef(null);
 
-  // Load all projects on mount
   useEffect(() => {
-    fetchProjects(true);
-  }, []);
+    fetchProjects();
+    if (id) {
+      loadProject(id);
+    } else {
+      navigate('/projects');
+    }
+  }, [id]);
 
   // Set up auto-save whenever editor content changes
   useEffect(() => {
@@ -54,20 +72,11 @@ export default function Dashboard() {
     };
   }, [editorContent]);
 
-  const fetchProjects = async (shouldLoadFirst = false) => {
+  const fetchProjects = async () => {
     try {
       const res = await projectsService.getProjects();
       const loadedProjects = res.data.data || [];
       setProjects(loadedProjects);
-
-      if (shouldLoadFirst) {
-        if (loadedProjects.length > 0) {
-          loadProject(loadedProjects[0]._id);
-        } else {
-          // If no projects exist, create a default one
-          handleCreateProject();
-        }
-      }
     } catch (err) {
       console.error('Failed to fetch projects', err);
     }
@@ -83,6 +92,7 @@ export default function Dashboard() {
       setEditorContent(project.editorContent || `<p>${project.text || ''}</p>`);
       setProjectData({
         keywords: project.keywords || {},
+        infographicHtml: project.infographicHtml || '',
         flowchart: project.flowchart || '',
         graph: project.graph || { nodes: [], links: [] }
       });
@@ -109,18 +119,7 @@ export default function Dashboard() {
 
       const res = await projectsService.saveProject(newProj);
       const created = res.data.data;
-
-      // Refetch and set active
-      await fetchProjects(false);
-      setActiveProjectId(created._id);
-      setEditorContent(created.editorContent);
-      setProjectData({
-        keywords: {},
-        flowchart: '',
-        graph: { nodes: [], links: [] }
-      });
-      lastSavedContent.current = created.editorContent;
-      setSaveStatus('saved');
+      navigate(`/editor/${created._id}`);
     } catch (err) {
       console.error('Failed to create project', err);
     } finally {
@@ -128,19 +127,18 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteProject = async (id) => {
+  const handleDeleteProject = async (targetId) => {
     try {
-      await projectsService.deleteProject(id);
+      await projectsService.deleteProject(targetId);
       
-      // Update list
-      const remaining = projects.filter(p => p._id !== id);
+      const remaining = projects.filter(p => p._id !== targetId);
       setProjects(remaining);
 
-      if (activeProjectId === id) {
+      if (activeProjectId === targetId) {
         if (remaining.length > 0) {
-          loadProject(remaining[0]._id);
+          navigate(`/editor/${remaining[0]._id}`);
         } else {
-          handleCreateProject();
+          navigate('/projects');
         }
       }
     } catch (err) {
@@ -215,22 +213,25 @@ export default function Dashboard() {
     setSaveStatus('saving');
     
     try {
-      // Step 1: Generate premium smart notes in English/Urdu
-      const notesRes = await aiService.generateSmartNotes(editorContent);
+      // Step 1: Generate premium smart notes in selected language
+      const notesRes = await notesService.generateSmartNotes(editorContent, language);
       const smartNotesHtml = notesRes.data.data;
       setEditorContent(smartNotesHtml);
 
       // Step 2: Generate rich interactive graph & chart data from notes
-      const visualsRes = await aiService.generateVisuals(smartNotesHtml);
+      const visualsRes = await aiService.generateVisuals(smartNotesHtml, language);
       const parsedVisuals = visualsRes.data.data;
       
       const newVisuals = {
-        keywords: parsedVisuals.keywords || {},
+        infographicHtml: parsedVisuals.infographicHtml || '',
         flowchart: parsedVisuals.flowchart || '',
         graph: parsedVisuals.graph || { nodes: [], links: [] }
       };
 
       setProjectData(newVisuals);
+      // Auto-switch to visuals tab after generation
+      setActiveTab('visuals');
+      setActiveVisualTab('storyboard');
 
       // Force instant save to database to persist newly generated notes
       const activeProj = projects.find(p => p._id === activeProjectId);
@@ -306,9 +307,28 @@ export default function Dashboard() {
         >
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <div className="flex flex-col min-w-0">
-              <h1 className="text-md font-bold truncate text-textMain">
-                {activeProjectName()}
-              </h1>
+              {isRenaming ? (
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onBlur={submitRename}
+                  onKeyDown={(e) => e.key === 'Enter' && submitRename()}
+                  className="bg-white/10 border border-white/20 rounded px-2 py-0.5 text-md font-bold text-textMain outline-none w-full"
+                  autoFocus
+                />
+              ) : (
+                <h1 
+                  className="text-md font-bold truncate text-textMain cursor-pointer hover:underline"
+                  onClick={() => {
+                    setEditName(activeProjectName());
+                    setIsRenaming(true);
+                  }}
+                  title="Click to rename"
+                >
+                  {activeProjectName()}
+                </h1>
+              )}
               
               {/* Dynamic Auto-save and Status Indicators */}
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -343,13 +363,13 @@ export default function Dashboard() {
             <div className="flex gap-1 bg-black/25 p-1 rounded-lg border border-white/5">
               <button 
                 onClick={() => setActiveTab('editor')}
-                className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-wide transition-all ${activeTab === 'editor' ? 'bg-primary text-white shadow-[0_0_10px_rgba(56,189,248,0.3)]' : 'text-textMuted hover:text-textMain'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-wide transition-all ${activeTab === 'editor' ? 'bg-primary text-black shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-textMuted hover:text-textMain'}`}
               >
                 Document
               </button>
               <button 
                 onClick={() => setActiveTab('visuals')}
-                className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-wide transition-all ${activeTab === 'visuals' ? 'bg-primary text-white shadow-[0_0_10px_rgba(56,189,248,0.3)]' : 'text-textMuted hover:text-textMain'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-wide transition-all ${activeTab === 'visuals' ? 'bg-primary text-black shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-textMuted hover:text-textMain'}`}
               >
                 Visuals
               </button>
@@ -373,11 +393,11 @@ export default function Dashboard() {
               <Save size={16} />
             </button>
 
-            {/* AI Synthesize */}
+            {/* Action Buttons */}
             <button 
               onClick={handleGenerateNotes}
               disabled={isProcessing}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-accent rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer shadow-[0_0_15px_rgba(192,132,252,0.3)]"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-black hover:bg-white/90 rounded-lg font-bold text-xs shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all disabled:opacity-50"
             >
               <Sparkles size={14} />
               AI Synthesize
@@ -439,9 +459,24 @@ export default function Dashboard() {
                   exit={{ opacity: 0, scale: 0.98 }}
                   className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6 pr-1"
                 >
-                  <KeywordCharts keywords={projectData.keywords} />
-                  <FlowchartPanel definition={projectData.flowchart} />
-                  <ConceptGraph data={projectData.graph} />
+                  {/* Visual sub-tab selector */}
+                  <div style={{ display: 'flex', gap: '6px', background: 'rgba(0,0,0,0.25)', padding: '6px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', width: 'fit-content' }}>
+                    {[{ id: 'storyboard', label: '📊 Storyboard' }, { id: 'flow', label: '🔀 Flow' }, { id: 'graph', label: '🕸 Graph' }].map(tab => (
+                      <button key={tab.id} onClick={() => setActiveVisualTab(tab.id)}
+                        style={{
+                          padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                          border: 'none', transition: 'all 0.2s',
+                          background: activeVisualTab === tab.id ? 'linear-gradient(135deg, #533483, #e94560)' : 'transparent',
+                          color: activeVisualTab === tab.id ? '#fff' : 'rgba(255,255,255,0.45)',
+                          boxShadow: activeVisualTab === tab.id ? '0 0 12px rgba(233,69,96,0.3)' : 'none',
+                        }}
+                      >{tab.label}</button>
+                    ))}
+                  </div>
+
+                  {activeVisualTab === 'storyboard' && <InfographicPanel htmlContent={projectData.infographicHtml} />}
+                  {activeVisualTab === 'flow' && <FlowchartPanel definition={projectData.flowchart} />}
+                  {activeVisualTab === 'graph' && <ConceptGraph data={projectData.graph} />}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -449,7 +484,12 @@ export default function Dashboard() {
 
           {/* AI Helper Q&A Panel */}
           <aside className="w-80 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
-            <AIResponsePanel currentText={getPlainTextForSpeech()} />
+            <AIResponsePanel 
+              currentText={getPlainTextForSpeech()} 
+              language={language}
+              setLanguage={setLanguage}
+              onInsert={(html) => setEditorContent(prev => prev + `<br/><br/>${html}`)}
+            />
           </aside>
         </div>
       </main>

@@ -1,8 +1,9 @@
+import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Color from '@tiptap/extension-color';
-import TextStyle from '@tiptap/extension-text-style';
-import Placeholder from '@tiptap/extension-placeholder';
+import { Color } from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Placeholder } from '@tiptap/extension-placeholder';
 import { 
   Bold, Italic, List, ListOrdered, Heading1, Heading2, 
   Quote, Undo, Redo, Code, Type, AlignLeft, AlignCenter, AlignRight
@@ -66,20 +67,22 @@ export default function RichEditor({ content, onChange }) {
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-invert max-w-none focus:outline-none min-h-[500px] p-6 text-textMain/90',
+        class: 'prose max-w-none focus:outline-none min-h-[500px] p-6 text-black',
       },
     },
   });
 
   // Update editor content when prop changes (e.g. AI generation)
-  if (editor && content !== editor.getHTML() && content !== '') {
-    editor.commands.setContent(content);
-  }
+  useEffect(() => {
+    if (editor && content !== editor.getHTML() && content !== '') {
+      editor.commands.setContent(content);
+    }
+  }, [editor, content]);
 
   return (
     <div id="rich-editor-container" className="glass-panel overflow-hidden border-primary/20 flex flex-col h-full">
       <MenuBar editor={editor} />
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto custom-scrollbar bg-white rounded-b-xl">
         <EditorContent editor={editor} />
       </div>
     </div>

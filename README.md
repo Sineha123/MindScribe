@@ -1,129 +1,127 @@
-# 🧠 MindScribe — Premium AI Learning & Knowledge Workspace Platform
+# 🧠 MindScribe — AI Learning & Knowledge Workspace with LLM + RAG + MCP
 
-MindScribe is a production-grade, full-stack AI-powered learning environment that transforms raw text and imported documents into highly structured study guides, interactive knowledge visualizations, and audio narrations. 
+MindScribe is a production-grade, full-stack AI-powered learning environment that transforms raw text and documents into structured study guides, interactive knowledge visualizations, and audio narrations.
 
-Featuring a premium glassmorphic dashboard with a **Three.js** floating background WebGL canvas, MindScribe integrates standard educational systems into a single responsive, beautiful interface.
+Featuring a **dual LLM engine** (Google Gemini + local Ollama), a **BM25 RAG pipeline**, and a **Model Context Protocol (MCP)** context layer — all inside a premium glassmorphic dashboard.
 
 ---
 
-## 🌟 1. System Architecture & Core Pipelines
+## 🌟 1. System Architecture
 
 ```
-                             ┌──────────────────────────────────────┐
-                             │       MindScribe UI (React 19)       │
-                             └──────────────────┬───────────────────┘
-                                                │
-       ┌────────────────────────────────────────┼───────────────────────────────────────┐
-       ▼                                        ▼                                       ▼
-┌──────────────┐                        ┌──────────────┐                        ┌──────────────┐
-│ Rich Editor  │                        │ Visual Panels│                        │Notes Narrator│
-│(Tiptap Star) │                        │(D3 / ChartJS)│                        │(Web Speech)  │
-└──────┬───────┘                        └──────┬───────┘                        └──────┬───────┘
-       │ (Auto-saves every 30s)                │ (Keywords / Graphs)                   │ (Speaks Text)
-       ▼                                        ▼                                       ▼
-┌──────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 Express API Server (Node.js)                                 │
-├──────────────────────────────────────────────────────────────────────────────────────────────┤
-│  • /api/upload  → PDF Parsing & Docx Mammoth Text Extracting                                 │
-│  • /api/ai      → Synthesizing study notes & generating concept graphs                      │
-│  • /api/projects → Save, list, update, and delete active workspace documents                 │
-└───────────────────────────────────────────────┬──────────────────────────────────────────────┘
-                                                │
-                        ┌───────────────────────┴───────────────────────┐
-                        ▼                                               ▼
-          ┌───────────────────────────┐                   ┌───────────────────────────┐
-          │      Local RAG Index      │                   │      Database Store       │
-          │    (Semantic Chunker)     │                   │     (MongoDB Mongoose)    │
-          └─────────────┬─────────────┘                   └───────────────────────────┘
-                        │
-                        ▼ (Top-3 matched chunks)
-          ┌───────────────────────────┐
-          │     Google Gemini API     │
-          │    (gemini-2.5-flash)     │
-          └───────────────────────────┘
+                          ┌─────────────────────────────────────────┐
+                          │         MindScribe UI  (React 19)        │
+                          │  📊 Storyboard · 🔀 Flow · 🕸 Graph      │
+                          └──────────────┬──────────────────────────┘
+                                         │ Axios / REST
+         ┌───────────────────────────────┼──────────────────────────────┐
+         ▼                               ▼                              ▼
+  ┌──────────────┐               ┌──────────────┐               ┌──────────────┐
+  │  Rich Editor │               │Visual Panels │               │Notes Narrator│
+  │  (Tiptap)    │               │(D3·Mermaid)  │               │(Web Speech)  │
+  └──────┬───────┘               └──────┬───────┘               └──────────────┘
+         │ Auto-saves (3s debounce)     │ AI-generated visuals
+         ▼                              ▼
+  ┌──────────────────────────────────────────────────────────────────────────────┐
+  │                       Express API Server (Node.js ESM)                       │
+  ├──────────────────────────────────────────────────────────────────────────────┤
+  │  /api/upload   → PDF / DOCX text extraction (Multer + pdf-parse + Mammoth)  │
+  │  /api/ai       → Notes · Summary · Q&A · Explain · Visuals · Providers      │
+  │  /api/projects → CRUD workspace document persistence                        │
+  └────────────────────────────────┬─────────────────────────────────────────────┘
+                                   │
+              ┌────────────────────┼────────────────────┐
+              ▼                    ▼                    ▼
+  ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐
+  │  MCP Layer       │   │  BM25 RAG Engine │   │  MongoDB Store   │
+  │  (mcp.service)   │   │  (rag.service)   │   │  (Mongoose)      │
+  │                  │   │                  │   │                  │
+  │ • Context env.   │   │ • Sliding window │   │ • Projects CRUD  │
+  │ • Session ring   │◄──│ • BM25 scoring   │   │ • Visual persist │
+  │ • Tool decl.     │   │ • Top-K chunks   │   │ • Auto-save sync │
+  └────────┬─────────┘   └──────────────────┘   └──────────────────┘
+           │
+           ▼ Structured MCP Prompt Envelope
+  ┌──────────────────────────────────────────────────────────────┐
+  │                    LLM Provider Layer                        │
+  ├───────────────────────────┬──────────────────────────────────┤
+  │   🌐 Google Gemini         │   🖥️ Ollama (Local LLM)          │
+  │   gemini-2.5-flash        │   llama3.2 · mistral · phi3 ...  │
+  │   Cloud · API key         │   Local · No key · Free          │
+  └───────────────────────────┴──────────────────────────────────┘
 ```
 
 ### Core Data Pipelines
-1. **Document Import Pipeline**: File uploaded via Multer → `upload.service.js` parses PDF (using robust CJS createRequire workaround) or extracts text from DOCX (using Mammoth) → Text cleaned and returned as HTML formatting suitable for editor insertion.
-2. **AI Synthesis Pipeline**: Editor content sent to `/api/ai/notes` and `/api/ai/visuals` → Gemini processes text to build Roman-Urdu study guides and returns semantic relation arrays → Sidebar automatically updates state and feeds coordinates directly to visual components.
-3. **Workspace Autosave Pipeline**: State manager listens to keystroke delta → Auto-saves to Mongoose DB at 3-second idle intervals → Changes title subtitle to `Syncing...` → Returns success and changes state to `Auto-saved`.
+1. **Document Import**: File → Multer → pdf-parse/Mammoth → HTML → Editor
+2. **AI Synthesis**: Editor text → BM25 RAG → MCP envelope → LLM (Gemini/Ollama) → Smart notes + visuals
+3. **Autosave**: Keystroke delta → 3s debounce → Mongoose PUT → `Auto-saved ✓`
+4. **RAG Q&A**: Question → BM25 chunk scoring → Top-4 context → MCP injection → LLM answer
 
 ---
 
-## 📂 2. Repository Folder Structure
+## 📂 2. Repository Structure
 
 ```bash
 MindScribe/
-│
-├── core/                        # Text processing engine (CJS/ESM modules)
+├── core/                          # Text processing engine
 │   ├── analysis/
-│   │   ├── keywordEngine.js     # Word frequency extraction models
-│   │   ├── stopwords.js         # Text cleanup dictionaries
-│   │   └── summaryEngine.js     # Sentence ranking models
+│   │   ├── keywordEngine.js       # Word frequency models
+│   │   └── summaryEngine.js       # Sentence ranking
 │   ├── text/
-│   │   ├── cleaner.js           # Smart quote, whitespace, & break normalization
-│   │   └── tokenizer.js         # Sentence splitter utility
-│   ├── generation/
-│   │   └── notesBuilder.js      # Raw bullet note list output formatter
-│   └── index.js                 # Core orchestrator pipeline entry
+│   │   ├── cleaner.js             # Normalization
+│   │   └── tokenizer.js           # Sentence splitter
+│   └── index.js                   # Core pipeline entry
 │
-├── server/                      # Express API Gateway (Node ESM)
+├── server/                        # Express API Gateway (ESM)
 │   ├── src/
 │   │   ├── config/
-│   │   │   └── db.js            # MongoDB Mongoose connector
+│   │   │   └── db.js              # MongoDB connector
 │   │   ├── modules/
 │   │   │   ├── ai/
-│   │   │   │   ├── ai.routes.js  # Synthesis, explanation, Q&A routes
-│   │   │   │   └── ai.service.js # Gemini Generative model integration
+│   │   │   │   ├── ai.routes.js   # REST endpoints + /providers + /context
+│   │   │   │   └── ai.service.js  # Unified LLM service (Gemini + Ollama)
 │   │   │   └── projects/
-│   │   │       ├── project.model.js  # Workspace project mongoose schema
-│   │   │       ├── project.routes.js # Project CRUD controller endpoints
-│   │   │       └── project.service.js# Mongoose save / findByIdAndUpdate logic
+│   │   │       ├── project.model.js   # Mongoose schema
+│   │   │       ├── project.routes.js  # CRUD controller
+│   │   │       └── project.service.js # DB operations
 │   │   ├── routes/
-│   │   │   ├── export.routes.js # Word / PDF export handler
-│   │   │   ├── notes.routes.js  # Text processor service link
-│   │   │   └── upload.routes.js # Multer file upload routes
+│   │   │   ├── export.routes.js   # DOCX/PDF export
+│   │   │   ├── notes.routes.js    # Text processor
+│   │   │   └── upload.routes.js   # File upload
 │   │   ├── services/
-│   │   │   ├── export.service.js# HTML-to-Word buffer packer
-│   │   │   ├── notes.service.js # Text processor service bridge
-│   │   │   ├── rag.service.js   # Local chunker & term matching RAG ranker
-│   │   │   └── upload.service.js# pdf-parse / mammoth document parsers
-│   │   ├── app.js               # Express application initialization
-│   │   └── server.js            # Port server starter
+│   │   │   ├── mcp.service.js     # ★ Model Context Protocol layer
+│   │   │   ├── ollama.service.js  # ★ Local Ollama LLM client
+│   │   │   ├── rag.service.js     # ★ BM25 RAG engine (upgraded)
+│   │   │   ├── export.service.js  # HTML-to-Word packer
+│   │   │   ├── notes.service.js   # Text processor bridge
+│   │   │   └── upload.service.js  # Document parsers
+│   │   ├── app.js                 # Express initialization
+│   │   └── server.js              # Port server starter
 │   ├── package.json
-│   └── .env
+│   └── .env                       # ★ LLM_PROVIDER + OLLAMA_* vars
 │
-├── client/                      # Vite Frontend Workspace (React 19 + Tailwind v4)
+├── client/                        # Vite Frontend (React 19 + Tailwind v4)
 │   ├── src/
-│   │   ├── assets/              # Premium fonts & images
 │   │   ├── components/
 │   │   │   ├── ai/
-│   │   │   │   └── AIResponsePanel.jsx # Sidebar Q&A chat & levels interface
-│   │   │   ├── charts/
-│   │   │   │   └── KeywordCharts.jsx   # Chart.js Keyword distribution charts
-│   │   │   ├── editor/
-│   │   │   │   └── RichEditor.jsx      # Tiptap toolbar & writing wrapper
+│   │   │   │   └── AIResponsePanel.jsx  # ★ LLM selector + RAG badge
 │   │   │   ├── flow/
-│   │   │   │   └── FlowchartPanel.jsx  # Mermaid.js flow diagram panel
+│   │   │   │   ├── FlowchartPanel.jsx   # ★ Mermaid + sanitizer
+│   │   │   │   └── InfographicPanel.jsx # Visual storyboard
 │   │   │   ├── graph/
-│   │   │   │   └── ConceptGraph.jsx    # D3 force-directed semantic graph panel
+│   │   │   │   └── ConceptGraph.jsx     # D3 BM25 knowledge graph
+│   │   │   ├── editor/
+│   │   │   │   └── RichEditor.jsx       # Tiptap editor
 │   │   │   ├── layout/
-│   │   │   │   └── Sidebar.jsx         # Live file explorer & Project CRUD list
-│   │   │   ├── three/
-│   │   │   │   └── Scene.jsx           # Three.js 3D WebGL background orb
+│   │   │   │   └── Sidebar.jsx          # Project explorer
 │   │   │   └── voice/
-│   │   │       └── VoiceControls.jsx   # Narration bar with speed controls
+│   │   │       └── VoiceControls.jsx    # Speech narrator
 │   │   ├── pages/
-│   │   │   └── Dashboard.jsx    # Central state orchestrator and workspace header
+│   │   │   └── Dashboard.jsx            # State orchestrator
 │   │   ├── services/
-│   │   │   └── api.js           # Standard Axios service mappings
-│   │   ├── utils/
-│   │   │   └── exportUtils.js   # Client-side html2canvas + jsPDF engine
-│   │   ├── main.jsx             # Entrypoint bootstrap
-│   │   ├── index.css            # Tailwind import & custom glassmorphism styles
-│   │   └── App.jsx              # Main routing & Scene overlay structure
-│   ├── tailwind.config.js
-│   ├── vite.config.js
+│   │   │   └── api.js                   # ★ Provider-aware Axios service
+│   │   └── utils/
+│   │       └── exportUtils.js           # Client PDF engine
 │   └── package.json
 │
 └── README.md
@@ -131,232 +129,206 @@ MindScribe/
 
 ---
 
-## 🛠️ 3. Deep Dive: Key Technical Components
+## 🛠️ 3. Key Technical Components
 
-### A. Tiptap Editor & Dynamic Auto-Save
-The editing interface uses `@tiptap/react` configured with `StarterKit`, `TextStyle`, and `Color` extensions. It provides fully stylized outputs inside a glassmorphic frame.
+### A. BM25 RAG Engine (`rag.service.js`)
 
-* **Debounced Save Loop**:
-  Keystrokes update the local editor state. An effect hook monitors changes and triggers a 3-second debounced save loop. If no typing occurs for 3 seconds, a Mongoose `PUT` sync call is launched, reducing DB load and safeguarding content.
-* **Workspace Status Indicators**:
-  * `● Unsaved changes` (Yellow status dot during typing).
-  * `Syncing...` (Blue spinning loop showing MongoDB persistence in progress).
-  * `Auto-saved` (Green checkmark confirming success).
+MindScribe uses **Okapi BM25** — the same probabilistic ranking algorithm used by Elasticsearch, Lucene, and Solr — for retrieving relevant document chunks before each LLM call.
 
-### B. Custom Local Semantic RAG (Retrieval-Augmented Generation) Engine
-To query massive 50MB PDFs without overloading the Gemini LLM context window or raising prompt costs, we implemented a custom semantic RAG model directly in Node ESM:
+**How it works:**
+1. **Sliding-Window Chunker**: Text is split into ~1500-char chunks with **15% overlap**, ensuring concepts spanning chunk boundaries are never lost.
+2. **IDF Index**: An Inverted Document Frequency index is built over all chunks. Rare terms score higher.
+3. **BM25 Scoring**:
+   ```
+   BM25(D,Q) = Σ IDF(qi) × [tf(qi,D)×(k1+1)] / [tf(qi,D) + k1×(1-b + b×|D|/avgdl)]
+   ```
+   Where `k1=1.5` (term saturation) and `b=0.75` (length normalization).
+4. **Top-K Retrieval**: The 4 highest-scoring chunks are returned for context injection.
 
-1. **Semantic Text Chunking** ([rag.service.js](server/src/services/rag.service.js)):
-   Filters clean text into logical paragraph slices (approx. 1500 characters) by looking ahead for sentence ending punctuation (`.`, `!`, `?`) to avoid splitting sentences mid-thought.
-2. **Relevance Weight Ranker**:
-   Queries are tokenized and cleaned of standard stopwords. The chunk text is cataloged inside a local Term-Frequency index. Chunks are scored based on the occurrence density of query tokens:
-   $$\text{Score}(c) = \sum_{t \in Q} \text{Freq}(t, c) \times 2$$
-3. **Retrieval Q&A Context Injection**:
-   The top 3 semantically ranked chunks are returned, separated by block delimiters, and injected as the `Retrieved Document Context` inside the Gemini prompt. This results in highly precise context answers.
+### B. MCP — Model Context Protocol (`mcp.service.js`)
 
-### C. Bilingual Gemini Synthesis
-The engine uses Google's `gemini-2.5-flash` model to analyze raw uploaded contents. The prompts are optimized to return:
-* **📌 Core Keywords**: 5-10 terms defined in English with localized Roman-Urdu annotations.
-* **📝 Comprehensive Paragraphs**: 3-5 verbose educational paragraphs covering the core topic.
-* **🔍 Conceptual Analysis**: Detailed breakdown of 5-8 sub-concepts.
-* **❓ FAQ Section**: A complete conceptual Q&A list addressing complex ideas.
-* **💡 Learning Outcomes**: Core takeaways for student goals.
+The **Model Context Protocol** is a standardized envelope format for structured LLM context passing. Instead of raw text injection, MCP wraps all inputs in a typed schema:
 
-### D. 3D WebGL Canvas & Force-Directed Concept Mapping
-* **Three.js Scene background** ([Scene.jsx](client/src/components/three/Scene.jsx)): 
-  Uses `@react-three/fiber` and `@react-three/drei` to render a floating space mesh overlaying 5,000 active stellar particles. A central sphere distorting dynamically via lighting shaders (`MeshDistortMaterial`) responds elegantly to cursor movements.
-* **D3Force Semantics** ([ConceptGraph.jsx](client/src/components/graph/ConceptGraph.jsx)):
-  Binds D3 force simulation models to AI-generated relationship datasets. Concepts are color-coded by semantic categories (Core ideas vs. Supporting factors). It implements custom charge strengths to prevent overlap:
-  ```javascript
-  const simulation = d3.forceSimulation(data.nodes)
-    .force('link', d3.forceLink(data.links).id(d => d.id).distance(100))
-    .force('charge', d3.forceManyBody().strength(-200))
-    .force('center', d3.forceCenter(width / 2, height / 2));
-  ```
-* **Mermaid Flowcharting** ([FlowchartPanel.jsx](client/src/components/flow/FlowchartPanel.jsx)):
-  Dynamically interprets Mermaid strings returned from Gemini to render system hierarchies and decision trees inside a custom dark glass frame.
+```json
+{
+  "protocol": "MCP/1.0",
+  "context": {
+    "document": { "title": "...", "wordCount": 1200, "language": "English" },
+    "rag": {
+      "strategy": "BM25",
+      "chunksRetrieved": 4,
+      "chunks": [{ "text": "...", "score": 3.14, "index": 2, "wordCount": 180 }]
+    },
+    "session": { "projectId": "abc123", "history": [{ "role": "user", "content": "..." }] },
+    "tools": ["generate_notes", "answer_question", "generate_visuals"],
+    "activeTool": "generate_notes"
+  },
+  "user_message": "..."
+}
+```
 
-### E. Speech Synthesis Narrator Bar
-The audio control panel uses the native browser `window.speechSynthesis` API:
-* ** playback Controls**: Play, Pause, Resume, and Stop controls mapped to state machine triggers.
-* **Speed Shifting**: Lets users set speed rates ranging from `0.5x` (slow) up to `2.0x` (fast).
-* **System Voice Detection**: Queries system voice matrices on startup to filter and load native high-definition English/Urdu voice engines.
-* **HTML Sanitization**: Strains out all rich tags and formats before speaking to ensure smooth narration.
+**Benefits:**
+- Provider-agnostic — same envelope works for Gemini, Ollama, or any future LLM
+- Session memory via a **rolling ring buffer** (6 last exchanges per project)
+- Structured tool declarations tell the LLM what capabilities are available
+- Debug endpoint: `POST /api/ai/context` returns the live envelope
 
-### F. Client-Side High-Fidelity PDF Print Engine
-Rather than hosting heavy server-side Chromium instances (which are slow to download and prone to crashes on standard server platforms), PDF exports are compiled directly in the browser:
-1. `html2canvas` captures the Tiptap container structure at double scale (`scale: 2`) with custom background-color values.
-2. The canvas output is exported as a PNG buffer.
-3. `jsPDF` maps the image into a physical A4 page using standard aspect-ratio formulas to avoid stretching or pixelation:
-   $$\text{pdfHeight} = \frac{\text{canvasHeight} \times \text{pdfWidth}}{\text{canvasWidth}}$$
+### C. Dual LLM Engine — Gemini + Ollama
+
+| Feature | Google Gemini | Ollama (Local) |
+|---|---|---|
+| Model | `gemini-2.5-flash` | `llama3.2`, `mistral`, `phi3`, etc. |
+| Setup | API key from aistudio.google.com | Install + `ollama pull <model>` |
+| Privacy | Cloud (data sent to Google) | 100% local — data never leaves machine |
+| Cost | Free tier + paid | Completely free |
+| Speed | Fast (cloud) | Depends on hardware |
+| Switch | `LLM_PROVIDER=gemini` | `LLM_PROVIDER=ollama` |
+
+Switch per-request from the **AI Panel** in the sidebar — Gemini/Ollama toggle with live status indicator.
+
+### D. Mermaid Flowchart Sanitizer
+
+AI-generated Mermaid diagrams often contain syntax errors (parentheses in labels, special characters). The `sanitizeMermaid()` function in `FlowchartPanel.jsx` automatically fixes:
+- `[Node (with parens)]` → `[Node with parens]` (strips parens from square labels)
+- `"` → `'` (converts double quotes)
+- `:` → ` -` (replaces colons)
+- Falls back to a minimal diagram if sanitization still fails
+
+### E. Tiptap Editor + Auto-Save
+- 3-second debounced Mongoose `PUT` sync
+- Status indicators: `● Unsaved` → `Syncing...` → `Auto-saved ✓`
+
+### F. D3 Force Knowledge Graph
+- BM25 node sizing — more important concepts render larger
+- Group color-coding: 🔴 Core / 🟣 Sub-Concept / 🔵 Detail
+- Zoom/pan with reset, interactive drag, tooltips, glow filters
+
+### G. Speech Synthesis Narrator
+- Native `window.speechSynthesis` API, 0.5x–2.0x speed control
+- HTML-stripped narration for smooth audio output
 
 ---
 
 ## 🔌 4. API Endpoints
 
-### Projects CRUD Mappings
+### AI Endpoints
 
-#### 1. Fetch All Workspace Documents
-* **Endpoint**: `GET /api/projects`
-* **Response**: `200 OK`
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/ai/notes` | Generate structured study notes |
+| POST | `/api/ai/summary` | Generate concise/detailed summary |
+| POST | `/api/ai/ask` | BM25 RAG Q&A with session memory |
+| POST | `/api/ai/explain` | Explain at beginner/intermediate/advanced |
+| POST | `/api/ai/visuals` | Generate infographic + flowchart + graph |
+| GET  | `/api/ai/providers` | List Gemini + Ollama status and models |
+| POST | `/api/ai/context` | Debug — return current MCP envelope |
+
+**Provider endpoint response:**
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "_id": "603d2b...",
-      "name": "Organic Chemistry Notes",
-      "createdAt": "2026-05-26T10:00:00Z",
-      "updatedAt": "2026-05-26T11:05:00Z"
-    }
+  "active": "gemini",
+  "providers": [
+    { "id": "gemini", "model": "gemini-2.5-flash", "status": "configured", "cloud": true },
+    { "id": "ollama", "model": "llama3.2", "status": "online", "cloud": false,
+      "models": [{ "name": "llama3.2", "size": "2.0 GB" }] }
   ]
 }
 ```
 
-#### 2. Fetch Single Document
-* **Endpoint**: `GET /api/projects/:id`
-* **Response**: `200 OK`
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "603d2b...",
-    "name": "Organic Chemistry Notes",
-    "text": "Organic chemistry is the study...",
-    "editorContent": "<h1>Organic Chemistry</h1><p>Organic chemistry...</p>",
-    "keywords": { "carbon": 10, "isomers": 8 },
-    "flowchart": "graph TD\n  A[Hydrocarbons] --> B[Alkanes]",
-    "graph": {
-      "nodes": [ { "id": "Hydrocarbons", "group": 1 } ],
-      "links": []
-    }
-  }
-}
-```
+### Projects CRUD
 
-#### 3. Create or Save Project
-* **Endpoint**: `POST /api/projects`
-* **Request Body**:
-```json
-{
-  "name": "Biology Notes",
-  "editorContent": "<p>Biology study notes...</p>"
-}
-```
-* **Response**: `201 Created`
-
-#### 4. Update Existing Workspace
-* **Endpoint**: `PUT /api/projects/:id`
-* **Request Body**:
-```json
-{
-  "name": "Modified Biology Notes",
-  "editorContent": "<h1>Biology Study Notes</h1><p>Enriched content...</p>",
-  "keywords": { "Mitosis": 9 }
-}
-```
-* **Response**: `200 OK`
-
-#### 5. Delete Workspace
-* **Endpoint**: `DELETE /api/projects/:id`
-* **Response**: `200 OK`
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET  | `/api/projects` | List all workspace documents |
+| GET  | `/api/projects/:id` | Fetch single project |
+| POST | `/api/projects` | Create new project |
+| PUT  | `/api/projects/:id` | Update existing project |
+| DELETE | `/api/projects/:id` | Delete project |
 
 ---
 
-### AI Modules Mappings
-
-#### 1. Synthesize Notes
-* **Endpoint**: `POST /api/ai/notes`
-* **Request**: `{ "text": "Raw transcript text..." }`
-* **Response**: `{ "success": true, "data": "<h1>Smart Notes</h1>..." }`
-
-#### 2. Generate Concept Diagrams
-* **Endpoint**: `POST /api/ai/visuals`
-* **Request**: `{ "text": "Rich notes text..." }`
-* **Response**:
-```json
-{
-  "success": true,
-  "data": {
-    "keywords": { "concept": 8 },
-    "flowchart": "graph TD\n  A --> B",
-    "graph": {
-      "nodes": [ { "id": "A", "group": 1 }, { "id": "B", "group": 2 } ],
-      "links": [ { "source": "A", "target": "B" } ]
-    }
-  }
-}
-```
-
----
-
-## ⚙️ 5. Setup & Launch Instructions
+## ⚙️ 5. Setup & Launch
 
 ### Prerequisites
-* **Node.js**: Version 18.0.0 or higher.
-* **MongoDB**: A running instance (local on port 27017 or Atlas cloud instance).
+- **Node.js** 18+
+- **MongoDB** running locally (port 27017) or Atlas
+- **Ollama** (optional) — install from [ollama.com](https://ollama.com)
 
-### 1. Environment Configurations
-Setup `.env` configurations in both directories:
+### 1. Environment Configuration
 
-* **Backend `.env`** (`server/.env`):
+**`server/.env`:**
 ```env
-MONGODB_URI=mongodb://127.0.0.1:27017/mindscribe
-GEMINI_API_KEY=AIzaSyChGH6xuAN4ca...  # Obtain from aistudio.google.com
+GEMINI_API_KEY=your_key_from_aistudio.google.com
 PORT=3000
+MONGODB_URI=mongodb://127.0.0.1:27017/mindscribe
+
+# LLM Provider: gemini | ollama
+LLM_PROVIDER=gemini
+
+# Ollama (local LLM)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
 ```
 
-* **Frontend `.env.local`** (`client/.env.local`):
-```env
-VITE_API_BASE_URL=http://localhost:3000
+### 2. Ollama Setup (Optional — for local AI)
+```bash
+# 1. Install Ollama from https://ollama.com/download
+# 2. Start server
+ollama serve
+
+# 3. Pull a model (choose based on your RAM)
+ollama pull llama3.2        # ~2GB — fast, good quality
+ollama pull mistral         # ~4GB — excellent reasoning
+ollama pull phi3            # ~2GB — Microsoft's efficient model
+ollama pull gemma2          # ~5GB — Google's open model
+
+# 4. Set in .env
+LLM_PROVIDER=ollama
+OLLAMA_MODEL=llama3.2
 ```
 
-### 2. Launch Backend (Terminal 1)
+### 3. Launch Backend
 ```bash
 cd server
 npm install
-npm run dev
-# Confirm: "MongoDB connected: mongodb://127.0.0.1:27017/mindscribe"
-# Confirm: "Running on: http://localhost:3000"
+node src/server.js
+# ✓ MongoDB connected: mongodb://127.0.0.1:27017/mindscribe
+# ✓ Running on: http://localhost:3000
 ```
 
-### 3. Launch Frontend (Terminal 2)
+### 4. Launch Frontend
 ```bash
 cd client
 npm install
 npm run dev
-# Confirm: "VITE v8.0.11 ready in 1378 ms"
-# Confirm: "➜ Local: http://localhost:5173/"
+# ✓ VITE ready → http://localhost:5173/
 ```
 
-Open **[http://localhost:5173/](http://localhost:5173/)** in your browser to start.
+---
+
+## 🔍 6. Troubleshooting
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| `502 Bad Gateway` | Backend not running | `cd server && node src/server.js` |
+| `400 Bad Request on /api/ai/notes` | Empty text body | Check editor has content before synthesizing |
+| `Mermaid parse error (React App)` | Parentheses in node labels | Fixed by `sanitizeMermaid()` in FlowchartPanel |
+| `Ollama: ECONNREFUSED` | Ollama not running | Run `ollama serve` in a terminal |
+| `MongoDB connection failed` | MongoDB not running | Start MongoDB service |
+| `API_KEY_INVALID` | Wrong Gemini key | Get key from [aistudio.google.com](https://aistudio.google.com) |
 
 ---
 
-## 🔍 6. Quality Assurance & Troubleshooting
+## ✅ 7. Validation Story
 
-### Common CommonJS Import Crashes (Node ESM)
-* **Problem**: `SyntaxError: The requested module 'pdf-parse' does not provide an export named 'default'`
-* **Resolution**: Cured inside `upload.service.js` using Node's `createRequire` method to securely resolve default exports:
-  ```javascript
-  import { createRequire } from 'module';
-  const require = createRequire(import.meta.url);
-  const pdf = require('pdf-parse');
-  ```
-
-### Heavy Puppeteer Binary Loading Exception
-* **Problem**: Server crash due to missing `puppeteer` packages during HTML-to-PDF rendering.
-* **Resolution**: Cleaned up the server-side Puppeteer dependency in `export.service.js` since PDF compilation is handled efficiently inside the client browser. This allows the backend server to launch instantly on all standard hosting systems.
-
----
-
-## ⭐ 7. Success Validation Story
-To verify system compliance, complete the following user journey:
-1. Load **`http://localhost:5173`**. Check that a premium space sky stars backdrop floats around a rotating cyan orb.
-2. Click **"+ New Project"** in the sidebar. Note that an "Untitled Project" is saved automatically to your MongoDB database.
-3. Import a sample PDF or TXT file using the **"Import"** button. The parsed text should render inside the rich editor.
-4. Note the save status in the header changing between `● Unsaved changes`, `Syncing...`, and `Auto-saved`.
-5. Click **"AI Synthesize"**. Watch the loading spinner. The text should render formatted study guides.
-6. Switch to the **"Visuals"** tab and interact with the D3 concept graph, Chart.js keywords, and Mermaid charts.
-7. Click the **"Play"** button on the Notes Narrator in the header. The narrator will read your notes aloud in high fidelity.
-8. Click **"Export PDF"** to verify that your document exports cleanly as a formatted PDF page.
+1. Open `http://localhost:5173` — premium 3D background loads
+2. Click **"+ New Project"** — auto-saved to MongoDB
+3. Import a PDF or type text in the editor
+4. Click **"AI Synthesize"** — watch it auto-switch to Visuals tab showing:
+   - 📊 **Storyboard** — rich infographic panels
+   - 🔀 **Flow** — Mermaid architecture diagram
+   - 🕸 **Graph** — D3 interactive knowledge graph with zoom/pan
+5. Switch to **Ollama** in the AI panel sidebar, pick a model, ask a question
+6. Watch the **RAG chunks badge** appear showing how many BM25-ranked chunks were used
+7. Click **Play** on the Narrator bar — notes read aloud
+8. Click **Export PDF** — formatted PDF downloaded

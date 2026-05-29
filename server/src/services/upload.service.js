@@ -20,7 +20,7 @@ export const processTxt = async (filePath) => {
 };
 
 export const extractContent = async (file) => {
-  const extension = file.name.split('.').pop().toLowerCase();
+  const extension = file.originalname.split('.').pop().toLowerCase();
   
   switch (extension) {
     case 'pdf':

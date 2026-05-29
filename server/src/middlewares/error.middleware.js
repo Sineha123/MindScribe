@@ -25,8 +25,10 @@ export function errorHandler(err, req, res, next) { // eslint-disable-line no-un
 
   // Determine status code
   //  400 Bad Request  → client sent bad input (validation errors)
-  //  500 Server Error → unexpected crash
-  const statusCode = err.statusCode || 400;
+  //  401 Unauthorized → invalid/missing API key
+  //  500 Server Error → unexpected crash or upstream LLM error
+  //  503 Service Unavailable → LLM provider overloaded/offline
+  const statusCode = err.statusCode || 500;
 
   res.status(statusCode).json({
     success: false,

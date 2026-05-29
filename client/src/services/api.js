@@ -4,16 +4,55 @@ const api = axios.create({
   baseURL: '/api',
 });
 
+// ─── Request Interceptor ───────────────────────────────────────────────────
+// Attaches Gemini API key and LLM provider settings from localStorage
+api.interceptors.request.use((config) => {
+  const apiKey = localStorage.getItem('geminiApiKey');
+  const provider = localStorage.getItem('llmProvider') || 'gemini';
+  const ollamaModel = localStorage.getItem('ollamaModel') || 'llama3.2';
+
+  if (apiKey) config.headers['x-gemini-api-key'] = apiKey;
+  config.headers['x-llm-provider'] = provider;
+  config.headers['x-ollama-model'] = ollamaModel;
+
+  return config;
+});
+
+// ─── Response Interceptor ──────────────────────────────────────────────────
+// Handles Gemini auth errors globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      const { status, data } = error.response;
+      if ((status === 401 || status === 400) && data?.message?.includes('API_KEY')) {
+        window.dispatchEvent(new CustomEvent('gemini-api-error'));
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ─── Service Definitions ───────────────────────────────────────────────────
+
 export const notesService = {
   processText: (text) => api.post('/notes/process-text', { text }),
-  generateSmartNotes: (text) => api.post('/ai/notes', { text }),
+  generateSmartNotes: (text, language = 'English', opts = {}) =>
+    api.post('/ai/notes', { text, language, ...opts }),
 };
 
 export const aiService = {
-  generateSummary: (text, type = 'concise') => api.post('/ai/summary', { text, type }),
-  askQuestion: (content, question) => api.post('/ai/ask', { content, question }),
-  explainContent: (content, level = 'beginner') => api.post('/ai/explain', { content, level }),
-  generateVisuals: (text) => api.post('/ai/visuals', { text }),
+  generateSummary: (text, type = 'concise', language = 'English', opts = {}) =>
+    api.post('/ai/summary', { text, type, language, ...opts }),
+  askQuestion: (content, question, language = 'English', projectId, opts = {}) =>
+    api.post('/ai/ask', { content, question, language, projectId, ...opts }),
+  explainContent: (content, level = 'beginner', language = 'English', opts = {}) =>
+    api.post('/ai/explain', { content, level, language, ...opts }),
+  generateVisuals: (text, language = 'English', opts = {}) =>
+    api.post('/ai/visuals', { text, language, ...opts }),
+  getProviders: () => api.get('/ai/providers'),
+  getContext: (text, question, language, projectId, documentTitle) =>
+    api.post('/ai/context', { text, question, language, projectId, documentTitle }),
 };
 
 export const uploadService = {
